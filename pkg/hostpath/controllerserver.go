@@ -101,6 +101,10 @@ func (hpc *hostPathController) CreateVolume(ctx context.Context, req *csi.Create
 		return nil, err
 	}
 
+	if err := hpc.validateCreateVolumeCapacityRange(req); err != nil {
+		return nil, err
+	}
+
 	storagePoolName := getStoragePoolNameFromMap(req.GetParameters())
 	if _, ok := hpc.cfg.StoragePoolDataDir[storagePoolName]; !ok {
 		return nil, fmt.Errorf("unable to locate path for storage pool %s", storagePoolName)
@@ -121,6 +125,7 @@ func (hpc *hostPathController) CreateVolume(ctx context.Context, req *csi.Create
 		klog.V(4).Infof("created volume %s at path %s", req.GetName(), filepath.Join(hpc.cfg.StoragePoolDataDir[storagePoolName], req.GetName()))
 	}	
 
+	capacity = req.CapacityRange.RequiredBytes
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			VolumeId:           req.Name,
